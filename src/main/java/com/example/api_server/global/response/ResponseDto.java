@@ -1,5 +1,6 @@
 package com.example.api_server.global.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +10,7 @@ import lombok.Getter;
 @AllArgsConstructor
 @Builder
 @JsonPropertyOrder({"success","data", "errorCode", "errorMessage"})
+@JsonInclude(JsonInclude.Include.NON_NULL) // null 값 제외
 public class ResponseDto<T> {
     private boolean success;  // 성공 여부
     private T data; // 성공 시 반환할 데이터
