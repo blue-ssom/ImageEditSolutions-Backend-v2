@@ -30,6 +30,7 @@ public class UserServiceImpl implements UserService {
         return ResponseDto.success("로그인 성공");
     }
 
+    @Override
     public ResponseDto signUp(SignUpReqDto signUpReqDto){
         // 중복된 username 체크
         if (userRepository.existsByUsername(signUpReqDto.getUsername())) {
@@ -43,6 +44,7 @@ public class UserServiceImpl implements UserService {
         return ResponseDto.success("회원가입 성공");
     }
 
+    @Override
     public ResponseDto checkUsername(String username){
         // 빈 값 검증
         if (username == null || username.isBlank()) {
