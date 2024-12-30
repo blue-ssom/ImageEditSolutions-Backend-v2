@@ -26,19 +26,24 @@
 
 <canvas id="canvas" width="500" height="500"></canvas>
 
+<!-- SockJS -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+
+<!-- STOMP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
 <script>
-  let ws;
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
   const status = document.getElementById('status');
-  let paths = []; // 그린 경로 저장용
-  let isDrawing = false;  // 그리기 상태를 추적
-  let lastTime = 0; // 마지막 전송 시간
 
-  // 선 색상 및 굵기 설정
+  let path = []; // 경로 데이터를 저장하는 배열
+  let isDrawing = false;  // 그리기 상태를 추적
+  let stompClient = null; // STOMP 클라이언트
   let currentColor = document.getElementById('color').value;
   let currentLineWidth = document.getElementById('lineWidth').value;
 
+  // 선 색상 및 굵기 설정
   document.getElementById('color').addEventListener('input', (e) => {
     currentColor = e.target.value; // 선택된 색상
   });
@@ -49,89 +54,102 @@
 
   // WebSocket 연결
   document.getElementById('connect').onclick = () => {
-    ws = new WebSocket('ws://localhost:8080/ws');
-    ws.onopen = () => {
-      console.log("WebSocket 연결됨");
+    const socket = new SockJS('http://localhost:8080/ws'); // SockJS 엔드포인트
+    stompClient = Stomp.over(socket); // STOMP 클라이언트 생성
+
+    stompClient.connect({}, () => {
+      console.log("STOMP 연결 성공!");
       status.textContent = "Connected";
 
-      // 메시지 수신 핸들러 설정
-      ws.onmessage = (event) => {
-        try {
-          let message = event.data;
+      // 특정 방 구독 (예: room123)
+      const roomId = "room123";
+      stompClient.subscribe(`/topic/edit/${roomId}`, (message) => {
+        const data = JSON.parse(message.body);
+        console.log("받은 데이터:", data);
 
-          // "Echo: " 문자열이 포함된 경우 제거
-          if (message.startsWith("Echo: ")) {
-            message = message.substring(6).trim();
-          }
-
-          const data = JSON.parse(message); // JSON 형식으로 파싱
-          console.log("받은 데이터:", data); // 받은 데이터 확인
-
-          if (data.type === "draw") {
-            drawOnCanvas(data.x, data.y); // Canvas에 그리기
-          }
-        } catch (e) {
-          console.error("Invalid JSON received:", event.data); // JSON 형식이 아닌 경우
+        if (data.type === "draw") {
+          data.path.forEach(point => drawOnCanvas(point.x, point.y, data.color, data.lineWidth));
         }
-      };
-    };
+      });
+    });
   };
 
   // 연결 종료
   document.getElementById('disconnect').onclick = () => {
-    if (ws) ws.close();
+    if (stompClient) {
+      stompClient.disconnect();
+      status.textContent = "Disconnected";
+      console.log("STOMP 연결 종료");
+    }
   };
 
   // 지우기 기능
   document.getElementById('clear').onclick = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 전체를 지운다
-    paths = []; // 경로 초기화
+    path = []; // 경로 초기화
   };
 
   // 마우스 클릭 시작
   canvas.addEventListener('mousedown', (e) => {
     isDrawing = true; // 그리기 시작
     path = []; // 이전 경로 초기화
-  });
-
-  // 마우스 이동 시 경로에 점 추가
-  canvas.addEventListener('mousemove', (e) => {
-    if (e.buttons !== 1 || !ws || ws.readyState !== WebSocket.OPEN) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // 경로에 현재 점 추가
+    ctx.beginPath(); // 새로운 경로 시작
+    ctx.moveTo(x, y);
     path.push({ x, y });
+  });
+
+  // 마우스 이동 시 경로에 점 추가
+  canvas.addEventListener('mousemove', (e) => {
+    if (!isDrawing) return; // 그리는 중이 아닐 경우 무시
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    drawOnCanvas(x, y, currentColor, currentLineWidth); // Canvas에 그림
+    path.push({ x, y }); // 경로 데이터 추가
 
     // 캔버스에서 그리기
-    drawOnCanvas(x, y);
+    drawOnCanvas(x, y, currentColor, currentLineWidth);
   });
 
   // 마우스 클릭을 뗄 때 경로 전송
   canvas.addEventListener('mouseup', () => {
-    if (path.length > 0) {
-      // 경로가 있으면 WebSocket으로 전송
+    isDrawing = false;
+
+    const roomID = "room123";
+
+    // 경로가 있으면 WebSocket으로 전송
+    if (path.length > 0 && stompClient) {
       const drawData = {
         type: "draw",
-        path,
-        color: currentColor,
-        lineWidth: currentLineWidth
+        path, // 현재까지 그린 경로
+        color: currentColor, // 사용 중인 색상
+        lineWidth: currentLineWidth // 사용 중인 선 두께
       };
 
-      ws.send(JSON.stringify(drawData)); // 경로 전송
+      stompClient.send(`/app/edit/${roomID}`, {}, JSON.stringify(drawData));
     }
-    isDrawing = false; // 그리기 종료
-    path = []; // 경로 초기화
+
+    // 경로 초기화
+    path = [];
+    ctx.beginPath();
   });
 
-  function drawOnCanvas(x, y) {
-    ctx.fillStyle = currentColor; // 현재 색상 사용
-    ctx.lineWidth = currentLineWidth; // 현재 선 굵기 사용
-    ctx.beginPath();
-    ctx.arc(x, y, 3, 0, 2 * Math.PI);
-    ctx.fill();
+  function drawOnCanvas(x, y, color, lineWidth) {
+    ctx.strokeStyle = color; // 현재 색상 사용
+    ctx.lineWidth = lineWidth; // 현재 선 굵기 사용
+
+
+    ctx.lineTo(x, y); // 현재 위치까지 선 그리기
+    ctx.stroke(); // 선 스타일 적용
+    ctx.beginPath(); // 새로운 경로 시작
+    ctx.moveTo(x, y); // 현재 위치로 이동
   }
 </script>
 </body>
