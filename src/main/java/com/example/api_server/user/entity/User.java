@@ -36,16 +36,9 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    @Column(name = "refresh_token")
-    private String refreshToken;
-
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 
     // username과 password만 초기화하는 생성자 추가
     public User(String username, String password) {
