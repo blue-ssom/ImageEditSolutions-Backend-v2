@@ -1,5 +1,6 @@
 package com.example.api_server.user.service.impl;
 
+import com.example.api_server.user.dto.request.CheckUsernameReqDto;
 import com.example.api_server.user.dto.request.LoginReqDto;
 import com.example.api_server.user.dto.request.SignUpReqDto;
 import com.example.api_server.user.entity.User;
@@ -46,14 +47,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public ResponseDto checkUsername(String username){
-        // 빈 값 검증
-        if (username == null || username.isBlank()) {
-            throw new CustomException(ErrorCode.EMPTY_USERNAME);
-        }
+    public ResponseDto checkUsername(CheckUsernameReqDto checkUsernameReqDto){
 
         // 중복 여부 확인
-        boolean isAvailable = userRepository.existsByUsername(username);
+        boolean isAvailable = userRepository.existsByUsername(checkUsernameReqDto.getUsername());
 
         if(isAvailable) throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
 
