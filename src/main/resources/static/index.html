@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket 이미지 실시간 편집</title>
+  <style>
+    canvas {
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+<h1>실시간 이미지 편집 테스트</h1>
+<label for="color">선 색상:</label>
+<input type="color" id="color" value="#0000ff"> <!-- 선 색상 선택 -->
+
+<label for="lineWidth">선 굵기:</label>
+<input type="range" id="lineWidth" min="1" max="10" value="3"> <!-- 선 굵기 조정 -->
+
+<button id="clear">Clear</button> <!-- 지우기 버튼 -->
+<button id="connect">Connect</button>
+<button id="disconnect">Disconnect</button>
+
+<p id="status"></p>
+
+<canvas id="canvas" width="500" height="500"></canvas>
+
+<script>
+  let ws;
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const status = document.getElementById('status');
+  let paths = []; // 그린 경로 저장용
+  let isDrawing = false;  // 그리기 상태를 추적
+  let lastTime = 0; // 마지막 전송 시간
+
+  // 선 색상 및 굵기 설정
+  let currentColor = document.getElementById('color').value;
+  let currentLineWidth = document.getElementById('lineWidth').value;
+
+  document.getElementById('color').addEventListener('input', (e) => {
+    currentColor = e.target.value; // 선택된 색상
+  });
+
+  document.getElementById('lineWidth').addEventListener('input', (e) => {
+    currentLineWidth = e.target.value; // 선택된 굵기
+  });
+
+  // WebSocket 연결
+  document.getElementById('connect').onclick = () => {
+    ws = new WebSocket('ws://localhost:8080/ws');
+    ws.onopen = () => {
+      console.log("WebSocket 연결됨");
+      status.textContent = "Connected";
+
+      // 메시지 수신 핸들러 설정
+      ws.onmessage = (event) => {
+        try {
+          let message = event.data;
+
+          // "Echo: " 문자열이 포함된 경우 제거
+          if (message.startsWith("Echo: ")) {
+            message = message.substring(6).trim();
+          }
+
+          const data = JSON.parse(message); // JSON 형식으로 파싱
+          console.log("받은 데이터:", data); // 받은 데이터 확인
+
+          if (data.type === "draw") {
+            drawOnCanvas(data.x, data.y); // Canvas에 그리기
+          }
+        } catch (e) {
+          console.error("Invalid JSON received:", event.data); // JSON 형식이 아닌 경우
+        }
+      };
+    };
+  };
+
+  // 연결 종료
+  document.getElementById('disconnect').onclick = () => {
+    if (ws) ws.close();
+  };
+
+  // 지우기 기능
+  document.getElementById('clear').onclick = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 전체를 지운다
+    paths = []; // 경로 초기화
+  };
+
+  // 마우스 클릭 시작
+  canvas.addEventListener('mousedown', (e) => {
+    isDrawing = true; // 그리기 시작
+    path = []; // 이전 경로 초기화
+  });
+
+  // 마우스 이동 시 경로에 점 추가
+  canvas.addEventListener('mousemove', (e) => {
+    if (e.buttons !== 1 || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // 경로에 현재 점 추가
+    path.push({ x, y });
+
+    // 캔버스에서 그리기
+    drawOnCanvas(x, y);
+  });
+
+  // 마우스 클릭을 뗄 때 경로 전송
+  canvas.addEventListener('mouseup', () => {
+    if (path.length > 0) {
+      // 경로가 있으면 WebSocket으로 전송
+      const drawData = {
+        type: "draw",
+        path,
+        color: currentColor,
+        lineWidth: currentLineWidth
+      };
+
+      ws.send(JSON.stringify(drawData)); // 경로 전송
+    }
+    isDrawing = false; // 그리기 종료
+    path = []; // 경로 초기화
+  });
+
+  function drawOnCanvas(x, y) {
+    ctx.fillStyle = currentColor; // 현재 색상 사용
+    ctx.lineWidth = currentLineWidth; // 현재 선 굵기 사용
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+</script>
+</body>
+</html>
