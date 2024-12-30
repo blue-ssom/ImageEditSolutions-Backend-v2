@@ -32,6 +32,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseDto signUp(SignUpReqDto signUpReqDto){
+
+        // 공백이 없는 문자열만 허용
+        if (signUpReqDto.getUsername() == null || signUpReqDto.getUsername().trim().isEmpty() || signUpReqDto.getUsername().matches(".*\\s.*")) {
+            throw new CustomException(ErrorCode.EMPTY_USERNAME);
+        }
+
+        if (signUpReqDto.getPassword()== null || signUpReqDto.getPassword().trim().isEmpty() || signUpReqDto.getPassword().matches(".*\\s.*")) {
+            throw new CustomException(ErrorCode.EMPTY_PASSWORD);
+        }
+
         // 중복된 username 체크
         if (userRepository.existsByUsername(signUpReqDto.getUsername())) {
             throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
