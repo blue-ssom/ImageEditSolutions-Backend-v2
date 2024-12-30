@@ -1,5 +1,6 @@
 package com.example.api_server.user.controller;
 
+import com.example.api_server.user.dto.request.CheckUsernameReqDto;
 import com.example.api_server.user.dto.request.LoginReqDto;
 import com.example.api_server.user.dto.request.SignUpReqDto;
 import com.example.api_server.global.response.ResponseDto;
@@ -28,21 +29,21 @@ public class UserController {
     // 로그인
     @PostMapping("/login")
     public ResponseEntity<ResponseDto> login(@Valid @RequestBody LoginReqDto loginReqDto) {
-        ResponseDto response = userService.login(loginReqDto);   // LoginReqDto 전달
-        return ResponseEntity.ok(response); // 응답 반환
+        ResponseDto response = userService.login(loginReqDto);
+        return ResponseEntity.ok(response);
     }
 
     // 회원가입
     @PostMapping("/signup")
     public ResponseEntity<ResponseDto> signup(@Valid @RequestBody SignUpReqDto signUpReqDto) {
-        ResponseDto response = userService.signUp(signUpReqDto);   // signUpReqDto 전달
-        return ResponseEntity.ok(response); // 응답 반환
+        ResponseDto response = userService.signUp(signUpReqDto);
+        return ResponseEntity.ok(response);
     }
 
     // 아이디 또는 이메일 중복확인
     @GetMapping("/check-username")
-    public ResponseEntity<?> checkUsername(@RequestParam String username) {
-        ResponseDto response = userService.checkUsername(username);
+    public ResponseEntity<ResponseDto> checkUsername(@RequestParam CheckUsernameReqDto checkUsernameReqDto) {
+        ResponseDto response = userService.checkUsername(checkUsernameReqDto);
         return ResponseEntity.ok(response);
     }
 }
