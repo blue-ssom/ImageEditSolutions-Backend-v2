@@ -34,7 +34,7 @@ public class UserServiceImpl implements UserService {
     public ResponseDto signUp(SignUpReqDto signUpReqDto){
 
         // 중복 확인 여부
-        if (signUpReqDto.getIsChecked() == null || !signUpReqDto.getIsChecked()) {
+        if (!Boolean.TRUE.equals(signUpReqDto.getIsChecked())) {
             throw new CustomException(ErrorCode.CHECK_NOT_PERFORMED);
         }
 
