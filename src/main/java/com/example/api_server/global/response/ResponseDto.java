@@ -2,6 +2,8 @@ package com.example.api_server.global.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,6 +24,17 @@ public class ResponseDto<T> {
         return ResponseDto.<T>builder()
                 .success(true)
                 .data(data)
+                .build();
+    }
+
+    // 토큰 응답 추가
+    public static ResponseDto token(String token) {
+        Map<String, String> tokenMap = new HashMap<>();
+        tokenMap.put("token", token);
+
+        return ResponseDto.<Map<String, String>>builder()
+                .success(true)
+                .data(tokenMap)
                 .build();
     }
 
