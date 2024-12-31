@@ -1,5 +1,6 @@
 package com.example.api_server.user.service.impl;
 
+import com.example.api_server.global.JwtUtil;
 import com.example.api_server.user.dto.request.CheckUsernameReqDto;
 import com.example.api_server.user.dto.request.LoginReqDto;
 import com.example.api_server.user.dto.request.SignUpReqDto;
@@ -16,7 +17,9 @@ import com.example.api_server.global.ErrorCode;
 @Service
 @AllArgsConstructor
 public class UserServiceImpl implements UserService {
+
     private final UserRepository userRepository;
+    private final JwtUtil jwtUtil;
 
     @Override
     public ResponseDto login(LoginReqDto loginReqDto) {
@@ -28,7 +31,11 @@ public class UserServiceImpl implements UserService {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
         }
 
-        return ResponseDto.success("로그인 성공");
+        // JWT 생성
+        String token = jwtUtil.createToken(user.getId(), user.getUsername());
+
+        // 토큰 반환
+        return ResponseDto.token(token);
     }
 
     @Override
