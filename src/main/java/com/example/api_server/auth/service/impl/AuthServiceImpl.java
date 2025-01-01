@@ -1,41 +1,35 @@
-package com.example.api_server.user.service.impl;
+package com.example.api_server.auth.service.impl;
 
-import com.example.api_server.global.JwtUtil;
-import com.example.api_server.user.dto.request.CheckUsernameReqDto;
-import com.example.api_server.user.dto.request.LoginReqDto;
-import com.example.api_server.user.dto.request.SignUpReqDto;
-import com.example.api_server.user.entity.User;
+import com.example.api_server.auth.dto.request.CheckUsernameReqDto;
+import com.example.api_server.auth.dto.request.LoginReqDto;
+import com.example.api_server.auth.dto.request.SignUpReqDto;
+import com.example.api_server.auth.entity.User;
 import com.example.api_server.global.CustomException;
 import com.example.api_server.global.response.ResponseDto;
-import com.example.api_server.user.mapper.UserMapper;
-import com.example.api_server.user.repository.UserRepository;
-import com.example.api_server.user.service.UserService;
+import com.example.api_server.auth.mapper.UserMapper;
+import com.example.api_server.auth.repository.AuthRepository;
+import com.example.api_server.auth.service.AuthService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.example.api_server.global.ErrorCode;
 
 @Service
 @AllArgsConstructor
-public class UserServiceImpl implements UserService {
+public class AuthServiceImpl implements AuthService {
 
-    private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;
+    private final AuthRepository authRepository;
 
     @Override
-    public ResponseDto login(LoginReqDto loginReqDto) {
+    public User login(LoginReqDto loginReqDto) {
 
-        User user = userRepository.findByUsername(loginReqDto.getUsername())
+        User user = authRepository.findByUsername(loginReqDto.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (!user.getPassword().equals(loginReqDto.getPassword())) {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
         }
 
-        // JWT 생성
-        String token = jwtUtil.createToken(user.getId(), user.getUsername());
-
-        // 토큰 반환
-        return ResponseDto.token(token);
+        return user;
     }
 
     @Override
@@ -48,7 +42,7 @@ public class UserServiceImpl implements UserService {
 
         // UserMapper를 사용하여 User 생성
         User user = UserMapper.mapToUser(signUpReqDto);
-        userRepository.save(user);
+        authRepository.save(user);
 
         return ResponseDto.success("회원가입 성공");
     }
@@ -57,7 +51,7 @@ public class UserServiceImpl implements UserService {
     public ResponseDto checkUsername(CheckUsernameReqDto checkUsernameReqDto){
 
         // 중복 여부 확인
-        boolean isAvailable = userRepository.existsByUsername(checkUsernameReqDto.getUsername());
+        boolean isAvailable = authRepository.existsByUsername(checkUsernameReqDto.getUsername());
 
         if(isAvailable) throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
 
