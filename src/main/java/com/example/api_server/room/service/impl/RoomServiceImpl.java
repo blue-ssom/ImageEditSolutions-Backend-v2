@@ -1,5 +1,6 @@
 package com.example.api_server.room.service.impl;
 
+import com.example.api_server.room.dto.request.CreateRoomReqDto;
 import com.example.api_server.room.entity.Room;
 import com.example.api_server.room.entity.RoomParticipant;
 import com.example.api_server.global.CustomException;
@@ -9,6 +10,7 @@ import com.example.api_server.room.mapper.RoomMapper;
 import com.example.api_server.room.repository.RoomParticipantRepository;
 import com.example.api_server.room.repository.RoomRepository;
 import com.example.api_server.room.service.RoomService;
+import jakarta.persistence.criteria.CriteriaBuilder.In;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
@@ -23,8 +25,9 @@ public class RoomServiceImpl implements RoomService {
 
     // 방 만들기
     @Override
-    public ResponseDto createRoom(Long userId, Integer roomNumber) {
+    public ResponseDto createRoom(Long userId, CreateRoomReqDto createRoomReqDto) {
 
+        Integer roomNumber = createRoomReqDto.getRoomNumber();
         // 방 번호가 이미 존재하는지 확인
         if (roomRepository.existsByRoomNumber(roomNumber)) {
             throw new CustomException(ErrorCode.ROOM_ALREADY_EXISTS);

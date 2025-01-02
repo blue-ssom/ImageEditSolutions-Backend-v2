@@ -1,11 +1,14 @@
 package com.example.api_server.editing.entity;
 
+import com.example.api_server.room.entity.Room;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import java.awt.Point;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -18,10 +21,14 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class Editing {
+public class EditedImage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "room_id") // 외래 키로 Room 엔티티와 연결
+    private Room room;
 
     private String type;
     private String color;
@@ -30,6 +37,10 @@ public class Editing {
     @ElementCollection // 컬렉션 타입을 JPA가 처리하도록 지정
     private List<Point> path; // 경로 데이터
 
-    @Column(name = "room_id", nullable = false)
-    private String roomId; // 해당 데이터가 속한 방 ID
+    // 생성자
+    public EditedImage(List<Point> path, String color, int lineWidth) {
+        this.path = path;
+        this.color = color;
+        this.lineWidth = lineWidth;
+    }
 }

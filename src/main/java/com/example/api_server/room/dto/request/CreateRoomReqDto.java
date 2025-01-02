@@ -1,5 +1,6 @@
 package com.example.api_server.room.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,7 +13,13 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CreateRoomReqDto {
 
-    @NotNull(message = "방 이름은 필수 입력값입니다.")
+    @NotBlank(message = "방 이름은 필수 입력값입니다.")
     private Integer roomNumber;
+
+
+    public Integer getRoomNumber() {
+        return roomNumber;
+    }
+
 
 }

@@ -36,7 +36,7 @@ public class AuthController {
 
     // 로그인
     @PostMapping("/login")
-    public ResponseEntity<ResponseDto> login(@Valid @RequestBody LoginReqDto loginReqDto,  HttpSession session) {
+    public ResponseEntity<ResponseDto> login(@Valid @RequestBody LoginReqDto loginReqDto, HttpSession session) {
         // 서비스 계층에서 로그인 검증
         User user = authService.login(loginReqDto);
 
