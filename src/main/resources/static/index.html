@@ -12,6 +12,13 @@
 </head>
 <body>
 <h1>실시간 이미지 편집 테스트</h1>
+
+<label for="roomNumber">Room Number:</label>
+<input type="number" id="roomNumber" name="roomNumber" value="1" />
+
+<label for="userId">User ID:</label>
+<input type="text" id="userId" name="userId" value="1"/>
+
 <label for="color">선 색상:</label>
 <input type="color" id="color" value="#0000ff"> <!-- 선 색상 선택 -->
 
@@ -52,8 +59,18 @@
     currentLineWidth = e.target.value; // 선택된 굵기
   });
 
+
   // WebSocket 연결
   document.getElementById('connect').onclick = () => {
+    const roomNumber = document.getElementById("roomNumber").value;
+    const userId = document.getElementById("userId").value;
+
+    if (!roomNumber || !userId) {
+      console.error("Room Number 또는 User ID가 입력되지 않았습니다.");
+      status.textContent = "Room Number와 User ID를 입력하세요.";
+      return;
+    }
+
     const socket = new SockJS('http://localhost:8080/ws'); // SockJS 엔드포인트
     stompClient = Stomp.over(socket); // STOMP 클라이언트 생성
 
@@ -61,9 +78,7 @@
       console.log("STOMP 연결 성공!");
       status.textContent = "Connected";
 
-      // 특정 방 구독 (예: room123)
-      const roomId = "room123";
-      stompClient.subscribe(`/topic/edit/${roomId}`, (message) => {
+      stompClient.subscribe(`/topic/room/${roomNumber}/edit`, (message) => {
         const data = JSON.parse(message.body);
         console.log("받은 데이터:", data);
 
@@ -71,6 +86,7 @@
           data.path.forEach(point => drawOnCanvas(point.x, point.y, data.color, data.lineWidth));
         }
       });
+      console.log(`Room Number: ${roomNumber}, User ID: ${userId}`);
     });
   };
 
@@ -120,9 +136,17 @@
 
   // 마우스 클릭을 뗄 때 경로 전송
   canvas.addEventListener('mouseup', () => {
+    const roomNumber = document.getElementById("roomNumber").value;
+    const userId = document.getElementById('userId').value;
+
+    if (!userId) {
+      console.log('User ID is empty!');
+    } else {
+      console.log('User ID:', userId);
+    }
+
     isDrawing = false;
 
-    const roomID = "room123";
 
     // 경로가 있으면 WebSocket으로 전송
     if (path.length > 0 && stompClient) {
@@ -130,10 +154,11 @@
         type: "draw",
         path, // 현재까지 그린 경로
         color: currentColor, // 사용 중인 색상
-        lineWidth: currentLineWidth // 사용 중인 선 두께
+        lineWidth: currentLineWidth, // 사용 중인 선 두께
+        userId: userId,
       };
 
-      stompClient.send(`/app/edit/${roomID}`, {}, JSON.stringify(drawData));
+      stompClient.send(`/app/room/${roomNumber}/edit`, {}, JSON.stringify(drawData));
     }
 
     // 경로 초기화
